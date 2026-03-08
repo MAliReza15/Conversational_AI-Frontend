@@ -20,10 +20,28 @@ export function useWebSocket() {
     const wsRef = useRef(null);
     const activeSessionIdRef = useRef(null);
 
+    const [isBackendUp, setIsBackendUp] = useState(false);
+
     // Keep ref in sync so callbacks can read latest value
     useEffect(() => {
         activeSessionIdRef.current = activeSessionId;
     }, [activeSessionId]);
+
+    // Backend Health Polling
+    useEffect(() => {
+        let interval;
+        const checkHealth = async () => {
+            try {
+                const res = await fetch(`${API_BASE}/health`);
+                setIsBackendUp(res.ok);
+            } catch (e) {
+                setIsBackendUp(false);
+            }
+        };
+        checkHealth();
+        interval = setInterval(checkHealth, 5000);
+        return () => clearInterval(interval);
+    }, []);
 
     // Current session's messages
     const messages =
@@ -307,5 +325,6 @@ export function useWebSocket() {
         switchToChat,
         goHome,
         activeSessionId,
+        isBackendUp,
     };
 }

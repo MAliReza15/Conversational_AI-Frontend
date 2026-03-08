@@ -21,6 +21,8 @@ const Index = () => {
         switchToChat,
         goHome,
         activeSessionId,
+        isConnected,
+        isBackendUp,
     } = useWebSocket();
     const [userName] = useState("Patient");
 
@@ -41,6 +43,13 @@ const Index = () => {
 
                 {/* Main content area */}
                 <div className="flex-1 flex flex-col relative z-10 overflow-hidden">
+
+                    {/* Connection Status Indicator */}
+                    <div className="absolute top-4 right-6 z-50 flex items-center gap-2 bg-background/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-border/50 text-xs font-medium text-muted-foreground shadow-sm">
+                        <div className={`w-2 h-2 rounded-full ${isBackendUp ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" : "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)] animate-pulse"}`}></div>
+                        {isBackendUp ? "Backend Connected" : "Backend Disconnected"}
+                    </div>
+
                     {showWelcome ? (
                         /* Welcome state — stays until user sends first message */
                         <div className="flex-1 flex flex-col items-center justify-center px-6 gap-8">
