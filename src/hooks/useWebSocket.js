@@ -37,17 +37,51 @@ export function useWebSocket() {
         .map((s) => ({ id: s.id, title: s.title }));
 
     // ── Helpers ───────────────────────────────────────────────
-    const getMessageType = (content) => {
+    const getMessageType = useCallback((content) => {
         if (content.startsWith("Recovery Summary:")) return "summary";
         if (content.includes("⚠️")) return "redflag";
         return "default";
-    };
+    }, []);
 
-    const generateTitle = (text) => {
-        // Use first ~30 chars of the first user message as the chat title
+    const generateTitle = useCallback((text) => {
         const cleaned = text.trim().replace(/\n/g, " ");
         return cleaned.length > 30 ? cleaned.slice(0, 30) + "…" : cleaned;
-    };
+    }, []);
+
+    // ── Load All Sessions from Server on Mount ─────────────────
+    useEffect(() => {
+        const loadAllSessions = async () => {
+            try {
+                const response = await fetch(`${API_BASE}/api/sessions`);
+                const sessionList = await response.json();
+
+                const mappedSessions = {};
+                sessionList.forEach((s) => {
+                    mappedSessions[s.session_id] = {
+                        id: s.session_id,
+                        title: s.title || "New Chat",
+                        messages: s.history.map((h) => ({
+                            id: crypto.randomUUID(),
+                            role: h.role,
+                            content: h.content,
+                            timestamp: new Date(s.last_activity),
+                            type: getMessageType(h.content),
+                            isStreaming: false,
+                        })),
+                        createdAt: new Date(s.created_at).getTime(),
+                    };
+                });
+
+                if (Object.keys(mappedSessions).length > 0) {
+                    setSessions(mappedSessions);
+                }
+            } catch (err) {
+                console.error("Failed to sync sessions from backend:", err);
+            }
+        };
+
+        loadAllSessions();
+    }, [API_BASE, getMessageType]);
 
     // ── Connect WebSocket for a given session ──────────────────
     const connectWS = useCallback((sid) => {
